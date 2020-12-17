@@ -140,6 +140,7 @@ struct xwidget_view
 
 #define XG_XWIDGET "emacs_xwidget"
 #define XG_XWIDGET_VIEW "emacs_xwidget_view"
+#define XG_GL_CONTEXT "emacs_gl_context"
 
 #ifdef HAVE_XWIDGETS
 void syms_of_xwidget (void);
