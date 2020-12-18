@@ -5337,7 +5337,7 @@ case "$USE_X_TOOLKIT" in
   none) test "x$HAVE_GTK" = "xyes" && TOOLKIT_LIBW="$GTK_LIBS" ;;
 esac
 if test "$HAVE_XWIDGETS" = "yes"; then
-  TOOLKIT_LIBW="$TOOLKIT_LIBW -lXcomposite -lepoxy -lGL -lGLU"
+  TOOLKIT_LIBW="$TOOLKIT_LIBW -lXcomposite -lGL"
 fi
 AC_SUBST(TOOLKIT_LIBW)
 

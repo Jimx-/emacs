@@ -53,6 +53,12 @@ struct xwidget
   /* A title used for button labels, for instance.  */
   Lisp_Object title;
 
+  /* Init function used by GLArea widget.  */
+  Lisp_Object init_func;
+
+  /* Render function used by GLArea widget.  */
+  Lisp_Object render_func;
+
   /* Vector of currently executing scripts with callbacks.  */
   Lisp_Object script_callbacks;
   /* Here ends the Lisp part.  script_callbacks is the marker field.  */
