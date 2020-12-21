@@ -553,12 +553,12 @@ xwidget_osr_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
         {
           if (!NILP (xw->init_func))
             {
-              call0(xw->init_func);
+              call2 (xw->init_func, make_fixed_natnum (xw->width), make_fixed_natnum (xw->height));
               xw->init_func = Qnil;
             }
 
           if (!NILP (xw->render_func))
-            call0(xw->render_func);
+            call0 (xw->render_func);
 
           glXSwapBuffers (GDK_WINDOW_XDISPLAY (xwin), GDK_WINDOW_XID (xwin_widget));
         }
