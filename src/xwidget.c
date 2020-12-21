@@ -114,10 +114,14 @@ Returns the newly constructed xwidget, or nil if construction fails.  */)
     {
       xw->init_func = Qnil;
       xw->render_func = Qnil;
+      xw->cursor_pos_cb = Qnil;
+      xw->mouse_button_cb = Qnil;
 
       if (!NILP (arguments)) {
         xw->init_func = Fplist_get(arguments, QCinit);
         xw->render_func = Fplist_get(arguments, QCrender);
+        xw->cursor_pos_cb = Fplist_get(arguments, QCcursor_pos);
+        xw->mouse_button_cb = Fplist_get(arguments, QCmouse_button);
       }
     }
 
@@ -601,6 +605,50 @@ xwidget_osr_event_set_embedder (GtkWidget *widget, GdkEvent *event,
                                      gtk_widget_get_window (xv->widget));
   return FALSE;
 }
+
+static gboolean
+glarea_button_event_cb (GtkWidget      *widget,
+                        GdkEventButton *event,
+                        gpointer        data)
+{
+  struct xwidget *xw = g_object_get_data (G_OBJECT (widget), XG_XWIDGET);
+
+  if (!NILP (xw->mouse_button_cb))
+    {
+      Lisp_Object action;
+
+      switch (event->type)
+        {
+        case GDK_BUTTON_PRESS:
+        case GDK_2BUTTON_PRESS:
+        case GDK_3BUTTON_PRESS:
+          action = Qpress;
+          break;
+        default:
+          action = Qrelease;
+          break;
+        }
+
+      call2 (xw->mouse_button_cb, make_int(event->button), action);
+    }
+
+  return TRUE;
+}
+
+static gboolean
+glarea_motion_notify_event_cb (GtkWidget      *widget,
+                               GdkEventMotion *event,
+                               gpointer        data)
+{
+  struct xwidget *xw = g_object_get_data (G_OBJECT (widget), XG_XWIDGET);
+
+  if (!NILP (xw->cursor_pos_cb))
+    {
+      call2 (xw->cursor_pos_cb, make_fixed_natnum (event->x), make_fixed_natnum (event->y));
+    }
+
+  return TRUE;
+}
 #endif /* USE_GTK */
 
 
@@ -645,6 +693,15 @@ xwidget_init_view (struct xwidget *xww,
                             G_CALLBACK (xwidget_osr_event_forward), NULL);
           g_signal_connect (G_OBJECT (xv->widget), "motion-notify-event",
                             G_CALLBACK (xwidget_osr_event_forward), NULL);
+        }
+      else if (EQ (xww->type, Qglarea))
+        {
+          g_signal_connect (G_OBJECT (xv->widget), "button-press-event",
+                            G_CALLBACK (glarea_button_event_cb), NULL);
+          g_signal_connect (G_OBJECT (xv->widget), "button-release-event",
+                            G_CALLBACK (glarea_button_event_cb), NULL);
+          g_signal_connect (G_OBJECT (xv->widget), "motion-notify-event",
+                            G_CALLBACK (glarea_motion_notify_event_cb), NULL);
         }
       else
         {
@@ -1110,7 +1167,29 @@ DEFUN ("xwidget-resize", Fxwidget_resize, Sxwidget_resize, 3, 3, 0,
   return Qnil;
 }
 
+DEFUN ("xwidget-queue-redraw", Fxwidget_queue_redraw, Sxwidget_queue_redraw, 1, 1, 0,
+       doc: /* Queue a redraw event for XWIDGET.  */ )
+  (Lisp_Object xwidget)
+{
+  CHECK_XWIDGET (xwidget);
+  struct xwidget *xw = XXWIDGET (xwidget);
 
+  for (Lisp_Object tail = Vxwidget_view_list; CONSP (tail); tail = XCDR (tail))
+    {
+      if (XWIDGET_VIEW_P (XCAR (tail)))
+        {
+          struct xwidget_view *xv = XXWIDGET_VIEW (XCAR (tail));
+          if (XXWIDGET (xv->model) == xw)
+            {
+#ifdef USE_GTK
+              gtk_widget_queue_draw (xv->widget);
+#endif
+            }
+        }
+    }
+
+  return Qnil;
+}
 
 
 DEFUN ("xwidget-size-request",
@@ -1322,6 +1401,7 @@ syms_of_xwidget (void)
   defsubr (&Sxwidget_view_lookup);
   defsubr (&Sxwidget_query_on_exit_flag);
   defsubr (&Sset_xwidget_query_on_exit_flag);
+  defsubr (&Sxwidget_queue_redraw);
 
   defsubr (&Sxwidget_webkit_uri);
   defsubr (&Sxwidget_webkit_title);
@@ -1333,8 +1413,12 @@ syms_of_xwidget (void)
 
   defsubr (&Sxwidget_glarea_make_current);
   DEFSYM (Qglarea, "glarea");
+  DEFSYM (Qpress, "press");
+  DEFSYM (Qrelease, "release");
   DEFSYM (QCinit, ":init");
   DEFSYM (QCrender, ":render");
+  DEFSYM (QCcursor_pos, ":cursor-pos");
+  DEFSYM (QCmouse_button, ":mouse-button");
 
   defsubr (&Sxwidget_size_request);
   defsubr (&Sdelete_xwidget_view);

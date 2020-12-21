@@ -59,6 +59,10 @@ struct xwidget
   /* Render function used by GLArea widget.  */
   Lisp_Object render_func;
 
+  /* Input callbacks used by GLArea widget.  */
+  Lisp_Object cursor_pos_cb;
+  Lisp_Object mouse_button_cb;
+
   /* Vector of currently executing scripts with callbacks.  */
   Lisp_Object script_callbacks;
   /* Here ends the Lisp part.  script_callbacks is the marker field.  */
