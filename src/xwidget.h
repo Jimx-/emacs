@@ -63,6 +63,9 @@ struct xwidget
   Lisp_Object cursor_pos_cb;
   Lisp_Object mouse_button_cb;
 
+  /* Private data for GLArea widget */
+  Lisp_Object private_data;
+
   /* Vector of currently executing scripts with callbacks.  */
   Lisp_Object script_callbacks;
   /* Here ends the Lisp part.  script_callbacks is the marker field.  */
