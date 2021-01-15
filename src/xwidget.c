@@ -30,6 +30,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "sysstdio.h"
 #include "termhooks.h"
 #include "window.h"
+#include "buffer.h"
 
 /* Include xwidget bottom end headers.  */
 #ifdef USE_GTK
@@ -554,6 +555,9 @@ xwidget_osr_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
       GdkWindow* xwin_widget = gtk_widget_get_window (xv->widget);
       GLXContext glcontext = g_object_get_data (G_OBJECT (xv->widget),
                                                 XG_GL_CONTEXT);
+      struct buffer *buf = XBUFFER (xw->buffer), *old = current_buffer;
+
+      set_buffer_internal (buf);
 
       if (glXMakeCurrent (GDK_WINDOW_XDISPLAY (xwin), GDK_WINDOW_XID (xwin_widget), glcontext))
         {
@@ -568,6 +572,8 @@ xwidget_osr_draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data)
 
           glXSwapBuffers (GDK_WINDOW_XDISPLAY (xwin), GDK_WINDOW_XID (xwin_widget));
         }
+
+      set_buffer_internal (old);
 
       return TRUE;
     }
@@ -614,6 +620,7 @@ glarea_button_event_cb (GtkWidget      *widget,
                         gpointer        data)
 {
   struct xwidget *xw = g_object_get_data (G_OBJECT (widget), XG_XWIDGET);
+  struct buffer *buf = XBUFFER (xw->buffer), *old = current_buffer;
 
   if (!NILP (xw->mouse_button_cb))
     {
@@ -631,7 +638,9 @@ glarea_button_event_cb (GtkWidget      *widget,
           break;
         }
 
+      set_buffer_internal (buf);
       call3 (xw->mouse_button_cb, make_int(event->button), action, xw->private_data);
+      set_buffer_internal (old);
     }
 
   return TRUE;
@@ -643,10 +652,13 @@ glarea_motion_notify_event_cb (GtkWidget      *widget,
                                gpointer        data)
 {
   struct xwidget *xw = g_object_get_data (G_OBJECT (widget), XG_XWIDGET);
+  struct buffer *buf = XBUFFER (xw->buffer), *old = current_buffer;
 
   if (!NILP (xw->cursor_pos_cb))
     {
+      set_buffer_internal (buf);
       call3 (xw->cursor_pos_cb, make_fixed_natnum (event->x), make_fixed_natnum (event->y), xw->private_data);
+      set_buffer_internal (old);
     }
 
   return TRUE;
